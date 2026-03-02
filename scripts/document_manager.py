@@ -44,6 +44,9 @@ class DocumentManager:
             "planning-with-files": "npx skills add OthmanAdi/planning-with-files"
         }
 
+        # 首次运行时扫描已安装技能
+        self.scan_installed_skills()
+
     def load_skills_index(self) -> Dict:
         """加载技能信息索引"""
         if self.skills_index_file.exists():
@@ -308,6 +311,78 @@ class DocumentManager:
             pass
 
         return False
+
+    def scan_installed_skills(self):
+        """扫描已安装的技能并更新索引"""
+        # 检查是否需要扫描（避免重复扫描）
+        first_run_file = self.docs_dir / '.first_run_completed'
+        if first_run_file.exists():
+            return
+
+        # 扫描技能目录
+        skills_dir = Path.home() / '.claude' / 'skills'
+        if not skills_dir.exists():
+            return
+
+        # 获取所有已安装的技能
+        installed_skills = []
+        for skill_path in skills_dir.iterdir():
+            if skill_path.is_dir() and not skill_path.name.startswith('.'):
+                # 检查是否有SKILL.md
+                if (skill_path / 'SKILL.md').exists():
+                    installed_skills.append(skill_path.name)
+
+        # 为每个已安装技能生成或更新索引
+        new_skills = []
+        for skill_name in installed_skills:
+            if skill_name not in self.skills_info:
+                self.skills_info[skill_name] = {
+                    "repo": "待补充",
+                    "verified": True,
+                    "last_updated": self.get_current_time()
+                }
+                new_skills.append(skill_name)
+
+        # 保存索引
+        if new_skills:
+            self.save_skills_index()
+
+            # 为新技能生成文档
+            for skill_name in new_skills:
+                if skill_name != "skill-manager":  # 跳过自己
+                    self.generate_management_doc(skill_name)
+
+        # 标记首次扫描完成
+        first_run_file.touch()
+
+    def generate_docs_for_installed_skills(self):
+        """为所有已安装技能生成文档（手动触发）"""
+        skills_dir = Path.home() / '.claude' / 'skills'
+        if not skills_dir.exists():
+            return "[错误] 技能目录不存在"
+
+        installed_skills = []
+        for skill_path in skills_dir.iterdir():
+            if skill_path.is_dir() and not skill_path.name.startswith('.'):
+                if (skill_path / 'SKILL.md').exists():
+                    installed_skills.append(skill_path.name)
+
+        result = f"[开始为 {len(installed_skills)} 个技能生成文档]\n\n"
+
+        for skill_name in installed_skills:
+            if skill_name != "skill-manager":  # 跳过自己
+                try:
+                    doc_path = self.skill_docs_dir / f"{skill_name}_英文_Chinese.md"
+                    if doc_path.exists():
+                        result += f"[跳过] {skill_name} - 文档已存在\n"
+                    else:
+                        self.generate_management_doc(skill_name)
+                        result += f"[完成] {skill_name} - 文档生成成功\n"
+                except Exception as e:
+                    result += f"[错误] {skill_name} - {str(e)}\n"
+
+        result += "\n[完成] 所有技能文档生成完成"
+        return result
 
     def get_current_time(self) -> str:
         """获取当前时间"""

@@ -131,6 +131,20 @@ python install-skill-from-github.py \
 3. 生成标准化管理文档
 4. 保存在 `~/.claude/skills/skill-manager/docs/skill_docs/`
 
+### 首次运行自动扫描
+
+当你升级到 v1.1.0 后，首次运行时会：
+1. 自动扫描 ~/.claude/skills/ 目录
+2. 为所有已安装的技能生成管理文档
+3. 无需手动操作
+
+### 手动生成所有文档
+
+如果需要重新生成所有文档：
+```
+/skill skill-manager generate-all-docs
+```
+
 ### 文档验证机制
 
 所有安装命令都经过验证，确保准确性：
