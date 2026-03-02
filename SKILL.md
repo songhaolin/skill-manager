@@ -1,8 +1,8 @@
 ---
 name: skill-manager
-description: 智能技能助手。理解自然语言需求，自动搜索、推荐、安装技能。支持中文需求描述，如"我想写小说"、"需要处理PDF"、"有任务管理工具吗"等。会优先调用find-skills搜索现有技能，智能推荐最佳选择，一键安装。无需记住技能名称，说出需求即可。
+description: 智能技能助手。理解自然语言需求，自动搜索、推荐、安装技能。支持中文需求描述，如"我想写小说"、"需要处理PDF"、"有任务管理工具吗"等。会优先调用find-skills搜索现有技能，智能推荐最佳选择，一键安装。无需记住技能名称，说出需求即可。新增技能文档管理功能和自动更新通知。
 user-invocable: true
-version: "1.0.0"
+version: "1.1.0"
 ---
 
 # Skill Manager - 智能技能助手
@@ -41,6 +41,8 @@ version: "1.0.0"
 - 🔍 智能搜索（调用find-skills）
 - 💡 智能推荐
 - 🚀 一键安装（调用skill-installer）
+- 📖 技能文档管理（自动生成、智能切换）
+- 🔄 自动更新通知
 
 ## 实现步骤
 
@@ -101,6 +103,86 @@ python install-skill-from-github.py \
 | PDF | pdf, document |
 | 测试 | test, testing |
 
+## 📖 文档管理功能
+
+### 查看技能文档
+
+```
+👤 "我想了解 brainstorming"
+
+🤖 📋 请选择要查看的内容：
+
+1. 📖 通用管理文档 - 我维护的标准化文档（包含准确安装方式）
+2. 🔧 源码 README - 技能自带的原始文档
+3. 🔍 对比查看 - 同时查看两种文档
+4. 📝 基本信息 - 快速概览
+
+👤 "1"
+
+🤖 [展示标准化管理文档]
+```
+
+### 自动生成文档
+
+安装技能后，skill-manager 会自动：
+
+1. 读取技能的 SKILL.md 和 README.md
+2. 分析技能功能和使用方法
+3. 生成标准化管理文档
+4. 保存在 `~/.claude/skills/skill-manager/docs/skill_docs/`
+
+### 文档验证机制
+
+所有安装命令都经过验证，确保准确性：
+
+- ✅ 从 GitHub 获取最新信息
+- ✅ 测试安装命令
+- ✅ 标记验证状态
+- ✅ 记录验证时间
+
+## 🔄 更新检查功能
+
+### 启动时自动检查
+
+每次使用 skill-manager 时，会自动检查是否有新版本（每7天检查一次）。
+
+### 手动检查更新
+
+```
+👤 "/skill skill-manager check-update"
+
+🤖 [检查中...]
+    ✅ 已是最新版本
+    或
+    🎉 发现新版本！
+    当前版本：v1.1.0
+    最新版本：v1.2.0
+
+    更新方法：
+    cd ~/.claude/skills/skill-manager
+    git pull origin main
+```
+
+### 一键更新
+
+```
+👤 "/skill skill-manager update"
+
+🤖 🚀 更新中...
+    ✅ 更新成功！
+    ⚠️ 请重启 Claude Code 以使用新功能
+```
+
+### 配置更新通知
+
+```python
+# 在 ~/.claude/skills/skill-manager/config.json 中
+{
+  "update_notification": true,     # 是否显示更新通知
+  "auto_check_interval": 7         # 自动检查间隔（天）
+}
+```
+
 ## 错误处理
 
 - 未找到技能 → 建议创建新技能
@@ -151,11 +233,59 @@ python install-skill-from-github.py \
 要创建吗？(y/n)
 ```
 
+### 示例4：查看技能文档
+
+```
+👤 "说明 brainstorming"
+
+🤖 📋 请选择要查看的内容：
+
+1. 📖 通用管理文档 - 我维护的标准化文档（包含准确安装方式）
+2. 🔧 源码 README - 技能自带的原始文档
+3. 🔍 对比查看 - 同时查看两种文档
+4. 📝 基本信息 - 快速概览（默认）
+
+👤 "1"
+
+🤖 [展示标准化管理文档，包含：
+    - 仓库地址
+    - 实际功能
+    - 使用方法
+    - ✅ 已验证的安装方式
+    - 使用示例
+]
+```
+
+### 示例5：检查更新
+
+```
+👤 "/skill skill-manager check-update"
+
+🤖 📡 检查中...
+   ✅ 已是最新版本
+   或
+   🎉 发现新版本！
+
+   当前版本：v1.1.0
+   最新版本：v1.2.0
+
+   更新内容：
+   - 新增技能分类浏览
+   - 优化搜索算法
+   - 修复已知问题
+
+   更新方法：
+   cd ~/.claude/skills/skill-manager
+   git pull origin main
+
+   或使用：/skill skill-manager update
+```
+
 ## 技术实现
 
 ### 意图分析器
 
-- 识别意图类型：install/create/search
+- 识别意图类型：install/create/search/info
 - 提取技能名称
 - 提取关键词
 - 生成搜索词
@@ -172,8 +302,23 @@ python install-skill-from-github.py \
 - 或使用 npx skills add
 - 验证安装
 
+### 文档管理器
+
+- 自动生成标准化文档
+- 智能文档切换（管理文档 vs 源码文档）
+- 文档验证机制
+- 文档索引维护
+
+### 更新检查器
+
+- 自动检查 GitHub 最新版本
+- 版本号比较
+- 更新通知生成
+- 一键更新功能
+
 ## 版本
 
+- v1.1.0 (2026-03-02) - 新增技能文档管理和自动更新通知功能
 - v1.0.0 (2026-03-02) - 初始版本
 
 ---
